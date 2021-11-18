@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperatura global</title>
+</head>
+<style>
+    body{
+        text-align: center;
+        font: 18px Arial;
+    }
+    #tooltip{
+        position: relative;
+        background-color: rgba(85, 77, 77, 0.8);
+        height: 50px;
+        width: 125px;
+        font: 15px Arial;
+    }
+</style>
+<body>
+    <h1 id='title'>Temperatura terrestre global</h1>
+    <h3 id='description'>De 1753 a 2015: temperatura base é igual a 8.66C°</h3>
+    <div id='grafico'></div>
+    <div id='legend'></div>
+</body>
+<script>
+    const mes = d3.timeFormat("%B")
+    const colors = ['blue', 'rgb(90, 130, 255)', 'green', 'yellow', 'orange', 'red']
+
+    var svg = d3.select(document.getElementById('grafico'))
+    .append('svg')
+    .attr('height', 500)
+    .attr('width', 1020)
+
+    d3.json('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/global-temperature.json', (dados) => {
+        const array = dados.monthlyVariance
+
+        const anos = array.map((valor) => {
+            return valor.year
+        })
+
+        const x1 = d3.scaleLinear().range([0, 950]).domain([d3.min(anos), d3.max(anos)])
+        const y1 = d3.scaleLinear().range([440, 0, 450]).domain([0, 11])
+
+        const xAxis = d3.axisBottom(x1).ticks(30).tickFormat(d3.format('d'))
+        const yAxis = d3.axisLeft(y1).tickFormat((d, i) => mes(new Date(2000, d, 3))).tickValues([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+
+        svg.append('g')
+            .attr('transform', 'translate(60, 480)')
+            .call(xAxis)
+            .attr('id', 'x-axis')
+
+        svg.append('g')
+            .attr('transform', 'translate(60, 30)')
+            .call(yAxis)
+            .attr('id', 'y-axis')
+
+        svg.selectAll('rect')
+            .data(array)
+            .enter()
+            .append('rect')
+            .attr('data-month', (d, i) => d.month - 1)
+            .attr('data-year', (d, i) => d.year)
+            .attr('data-temp', (d, i) => 8.66 + d.variance)
+            .attr('y', (d, i) => y1(d.month - 1))
+            .attr('height', 450 / 12)
+            .attr('x', (d, i) => x1(d.year) + 60)
+            .attr('width', 950 / (d3.max(anos) - d3.min(anos)))
+            .attr('class', 'cell')
+            .style('fill', (d, i) => 8.66 + d.variance <= 5 ? colors[0] :  8.66 + d.variance <= 6 ?  colors[1] : 8.66 + d.variance <= 7 ?  colors[2] :  8.66 + d.variance <= 8 ?  colors[3] : 8.66 + d.variance <= 9 ?  colors[4] :  colors[5])
+            .on('mouseover', function (d, i){
+                d3.select(this)
+                .style('fill', 'black')
+
+                d3.select('div')
+                .append('div')
+                .attr('id', 'tooltip')
+                .attr('data-year', d.year)
+                .style('bottom', 500 - y1(d.month - 1) + 10 + 'px')
+                .style('left', ((window.innerWidth - 1020 > 0 ? window.innerWidth - 1020 : 50) / 2) + (950 / (d3.max(anos) - d3.min(anos)) + x1(d.year) + 60) + 'px')
+                .html(`${d.year} - ${mes(new Date(d.year, d.month - 1, 1))} <br/> ${(8.66 + d.variance).toFixed(1)}C° <br/> ${d.variance}C°`)
+            })
+            .on('mouseout', function (d, i){
+                d3.select(this)
+                .style('fill', 8.66 + d.variance <= 5 ? colors[0] :  8.66 + d.variance <= 6 ?  colors[1] : 8.66 + d.variance <= 7 ?  colors[2] :  8.66 + d.variance <= 8 ?  colors[3] : 8.66 + d.variance <= 9 ?  colors[4] :  colors[5])
+
+                var div = document.getElementById('tooltip')
+                div.parentNode.removeChild(div)
+            })
+    
+    const aparece = ['0C°', '5C°', '6C°', '7C°', '8C°', '9C°', '14C°']
+    const x = d3.scaleLinear().range([0, 300]).domain([4, 10])
+    const xlegend = d3.axisBottom(x).tickValues([4, 5, 6, 7, 8, 9, 10]).tickFormat((d, i) => aparece[i])
+
+    var legend = d3.select(document.getElementById("legend"))
+        .append('svg')
+        .attr('height', 70)
+        .attr('width', 320)
+    
+    legend.selectAll('rect')
+        .data(colors)
+        .enter()
+        .append('rect')
+        .attr('height', 50)
+        .attr('width',  50)
+        .attr('x', (d, i) => i*50 + 10)
+        .style('fill', (d, i) => d)
+    
+    legend.append('g')
+        .attr('transform', 'translate(10, 50)')
+        .call(xlegend)
+    })
+</script>
+</html>
